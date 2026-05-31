@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Kevin Info + Phonk</title>
+  <title>My Info</title>
   <style>
     * {
       margin: 0;
@@ -20,35 +20,11 @@
       justify-content: center;
       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       padding: 1.5rem;
-      position: relative;
-    }
-
-    .toggle-btn {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background: #111;
-      border: 1px solid rgba(255, 0, 255, 0.5);
-      color: white;
-      padding: 0.6rem 1.2rem;
-      border-radius: 2rem;
-      font-size: 0.9rem;
-      font-weight: bold;
       cursor: pointer;
-      transition: 0.2s;
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-    }
-
-    .toggle-btn:hover {
-      background: #ff00aa20;
-      box-shadow: 0 0 12px #ff00aa;
-      border-color: #ff00aa;
     }
 
     .rgb-core {
       display: inline-block;
-      background: transparent;
       padding: 1.8rem 2.2rem;
       border-radius: 2rem;
       text-align: center;
@@ -81,97 +57,50 @@
 
     @media (max-width: 550px) {
       .rgb-core { padding: 1.2rem 1.4rem; border-radius: 1.5rem; }
-      .toggle-btn { top: 0.7rem; right: 0.7rem; padding: 0.5rem 1rem; font-size: 0.8rem; }
     }
   </style>
 </head>
 <body>
-  <button class="toggle-btn" id="musicToggle">🔊 MUSIC ON</button>
-
   <div class="rgb-core">
     <span class="rgb-phrase">Vous en savez plus sur moi ?</span>
   </div>
 
-  <!-- Your exact song link -->
-  <audio id="phonkAudio" loop preload="auto">
+  <audio id="bgMusic" loop preload="auto" autoplay muted>
     <source src="https://cdn.soundworldz.com/songs/FR4y0v_C/FUNK_SERENO.mp3" type="audio/mpeg">
   </audio>
 
   <script>
-    const audio = document.getElementById('phonkAudio');
-    const toggleBtn = document.getElementById('musicToggle');
-    let isPlaying = false;
-    let userInteracted = false;
+    const audio = document.getElementById('bgMusic');
+    let unmuted = false;
+    let wasPlaying = false;
 
-    // Optional: log if the link fails to load (no alert, just quiet)
-    audio.addEventListener('error', () => {
-      console.warn("⚠️ Song failed to load. Check if the URL is accessible and allows CORS.");
-    });
-
-    function startMusic() {
-      if (!userInteracted) {
-        audio.play().then(() => {
-          isPlaying = true;
-          toggleBtn.textContent = '🔇 MUSIC OFF';
-          userInteracted = true;
-        }).catch(err => {
-          console.log("Click the button to start music (browser policy).");
-        });
+    // Unmute on first user click anywhere (no button)
+    function enableSound() {
+      if (!unmuted) {
+        audio.muted = false;
+        audio.play().catch(() => {});
+        unmuted = true;
+        document.body.removeEventListener('click', enableSound);
+        document.body.removeEventListener('touchstart', enableSound);
+        document.body.style.cursor = 'default';
       }
     }
 
-    toggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      
-      if (!userInteracted) {
-        audio.play().then(() => {
-          isPlaying = true;
-          toggleBtn.textContent = '🔇 MUSIC OFF';
-          userInteracted = true;
-        }).catch(err => {
-          console.error("Playback failed. The server might block audio requests.", err);
-          alert("Cannot play song – the link might not allow direct playback. Try a different MP3 URL.");
-        });
-      } else {
-        if (isPlaying) {
-          audio.pause();
-          isPlaying = false;
-          toggleBtn.textContent = '🔊 MUSIC ON';
-        } else {
-          audio.play().then(() => {
-            isPlaying = true;
-            toggleBtn.textContent = '🔇 MUSIC OFF';
-          }).catch(err => console.log(err));
-        }
-      }
-    });
+    document.body.addEventListener('click', enableSound);
+    document.body.addEventListener('touchstart', enableSound);
 
-    document.body.addEventListener('click', (e) => {
-      if (e.target === toggleBtn) return;
-      if (!userInteracted) startMusic();
-    });
-
-    let wasPlayingBeforeHide = false;
+    // Pause when leaving tab, resume when back (if it was playing)
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        if (userInteracted && !audio.paused) {
-          wasPlayingBeforeHide = true;
+        if (!audio.paused && unmuted) {
+          wasPlaying = true;
           audio.pause();
         }
       } else {
-        if (wasPlayingBeforeHide && userInteracted) {
+        if (wasPlaying && unmuted) {
           audio.play().catch(() => {});
-          isPlaying = true;
-          toggleBtn.textContent = '🔇 MUSIC OFF';
-          wasPlayingBeforeHide = false;
+          wasPlaying = false;
         }
-      }
-    });
-
-    audio.addEventListener('ended', () => {
-      if (userInteracted) {
-        isPlaying = false;
-        toggleBtn.textContent = '🔊 MUSIC ON';
       }
     });
   </script>
